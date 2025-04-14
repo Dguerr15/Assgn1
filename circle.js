@@ -12,7 +12,7 @@ class Circle {
     
     calculateVertices() {
         const vertices = [];
-        const radius = this.size / 50; // Scale down for better visibility
+        const radius = this.size / 150; // Scale down for better visibility
         
         // Always include center point
         vertices.push(this.position[0], this.position[1]);

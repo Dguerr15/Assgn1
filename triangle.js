@@ -6,7 +6,7 @@ class Triangle {
         this.size = size;          // size factor
         
         // Calculate the vertices of the triangle based on center position and size
-        const halfSize = this.size / 50; // Scale down for better visibility
+        const halfSize = this.size / 150; // Scale down for better visibility
         
         this.vertices = [
             // Center top

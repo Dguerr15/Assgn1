@@ -24,6 +24,10 @@ let u_PointSize;
 let shapesList = []; // Array to store all shapes
 let currentShapeType = 'point'; // Default shape type
 let dog;
+let brushPreviewElement;
+let particles = [];
+let isAnimating = false;
+let animationId = null;
 
 // Current color and size values
 let currentColor = [1.0, 0.0, 0.0, 1.0]; // RGBA, default red
@@ -52,6 +56,19 @@ function main() {
     
     // Set up event listeners
     setupEventListeners();
+
+    // Initialize UI state
+    updateButtonState();
+
+    // Create brush preview element
+    createBrushPreview();
+    
+    // Set up slider colors
+    document.getElementById('redSlider').style.accentColor = '#f44336';
+    document.getElementById('greenSlider').style.accentColor = '#4CAF50';
+    document.getElementById('blueSlider').style.accentColor = '#2196F3';
+    document.getElementById('sizeSlider').style.accentColor = '#9C27B0';
+    document.getElementById('segmentsSlider').style.accentColor = '#9C27B0';
 }
 
 function setupWebGL() {
@@ -100,6 +117,20 @@ function setupEventListeners() {
         if (ev.buttons == 1) {
             handleClick(ev);
         }
+        updateBrushPreview(ev);
+    };
+
+    canvas.onmouseenter = function(ev) {
+        if (brushPreviewElement) {
+            brushPreviewElement.style.display = 'block';
+        }
+        updateBrushPreview(ev);
+    };
+    
+    canvas.onmouseleave = function() {
+        if (brushPreviewElement) {
+            brushPreviewElement.style.display = 'none';
+        }
     };
     
     // Button events
@@ -107,6 +138,7 @@ function setupEventListeners() {
         shapesList = []; 
         dogDisplayed = false;
         gl.clear(gl.COLOR_BUFFER_BIT);
+        createExplosion();
     };
     
     document.getElementById('pointBtn').onclick = function() { 
@@ -126,36 +158,40 @@ function setupEventListeners() {
 
     document.getElementById('drawDogBtn').onclick = function() { 
         // Toggle the dog display state
-        dogDisplayed = true;
-        
-        // Re-render everything
+        dogDisplayed = true; 
         renderAllShapes();
+        createConfetti();
     };
     
     // Slider events
     document.getElementById('redSlider').oninput = function() {
         currentColor[0] = this.value;
         document.getElementById('redValue').textContent = parseFloat(this.value).toFixed(1);
+        updateBrushPreviewStyle();
     };
     
     document.getElementById('greenSlider').oninput = function() {
         currentColor[1] = this.value;
         document.getElementById('greenValue').textContent = parseFloat(this.value).toFixed(1);
+        updateBrushPreviewStyle();
     };
     
     document.getElementById('blueSlider').oninput = function() {
         currentColor[2] = this.value;
         document.getElementById('blueValue').textContent = parseFloat(this.value).toFixed(1);
+        updateBrushPreviewStyle();
     };
     
     document.getElementById('sizeSlider').oninput = function() {
         currentSize = parseFloat(this.value);
         document.getElementById('sizeValue').textContent = this.value;
+        updateBrushPreviewStyle();
     };
     
     document.getElementById('segmentsSlider').oninput = function() {
         currentSegments = parseInt(this.value);
         document.getElementById('segmentsValue').textContent = this.value;
+        updateBrushPreviewStyle();
     };
 }
 
@@ -166,7 +202,17 @@ function updateButtonState() {
     document.getElementById('circleBtn').classList.remove('active');
     
     // Add active class to current button
-    document.getElementById(currentShapeType + 'Btn').classList.add('active');
+    const currentButton = document.getElementById(currentShapeType + 'Btn');
+    currentButton.classList.add('active');
+
+    // Add subtle animation for selection effect
+    currentButton.style.transform = 'scale(1.15)';
+    setTimeout(() => {
+        currentButton.style.transform = 'scale(1.1)';  // Return to slightly enlarged state
+    }, 150);
+    
+    // Update brush preview for new shape type
+    updateBrushPreviewStyle();
 }
 
 function handleClick(ev) {
@@ -211,5 +257,230 @@ function renderAllShapes() {
     // Draw each shape
     for (let i = 0; i < shapesList.length; i++) {
         shapesList[i].render(gl, a_Position, u_FragColor, u_PointSize);
+    }
+}
+
+function createBrushPreview() {
+    brushPreviewElement = document.createElement('div');
+    brushPreviewElement.className = 'brush-preview';
+    document.body.appendChild(brushPreviewElement);
+    
+    // Style it based on current settings
+    updateBrushPreviewStyle();
+}
+
+function updateBrushPreviewStyle() {
+    if (!brushPreviewElement) return;
+    
+    // Get preview size - converting from WebGL units to pixels
+    // Note that WebGL size units need to be converted to screen pixels
+    let size;
+    
+    if (currentShapeType === 'point') {
+        // Point size directly maps to pixel size in WebGL
+        size = currentSize;
+        brushPreviewElement.style.width = size + 'px';
+        brushPreviewElement.style.height = size + 'px';
+        brushPreviewElement.style.borderRadius = '50%';
+        brushPreviewElement.style.clipPath = '';
+    } else if (currentShapeType === 'triangle') {
+        // For triangle, size determines the scale
+        size = currentSize * 3;
+        brushPreviewElement.style.width = size + 'px';
+        brushPreviewElement.style.height = size + 'px';
+        brushPreviewElement.style.borderRadius = '0';
+        brushPreviewElement.style.clipPath = 'polygon(50% 0%, 0% 100%, 100% 100%)';
+    } else if (currentShapeType === 'circle') {
+        // For circle, we need to match the radius calculation in Circle.js
+        const radius = currentSize / 150; // This matches Circle.js
+        // Convert WebGL units to pixels (approximation: canvas is 400x400 pixels, WebGL is -1 to 1)
+        size = radius * 400; // Scale WebGL coordinates to canvas pixels
+        brushPreviewElement.style.width = size + 'px';
+        brushPreviewElement.style.height = size + 'px';
+        brushPreviewElement.style.borderRadius = '50%';
+        brushPreviewElement.style.clipPath = '';
+    }
+    
+    // Set the color - same as before
+    brushPreviewElement.style.backgroundColor = `rgba(${currentColor[0]*255}, ${currentColor[1]*255}, ${currentColor[2]*255}, 0.5)`;
+}
+
+function updateBrushPreview(ev) {
+    if (!brushPreviewElement) {
+        createBrushPreview();
+        return;
+    }
+    
+    // Apply current style - this includes size and shape
+    updateBrushPreviewStyle();
+    
+    // Update position to follow mouse cursor
+    // We need to center the preview on the cursor
+    let previewWidth = parseFloat(brushPreviewElement.style.width);
+    let previewHeight = parseFloat(brushPreviewElement.style.height);
+    
+    brushPreviewElement.style.left = (ev.clientX - previewWidth / 2) + 'px';
+    brushPreviewElement.style.top = (ev.clientY - previewHeight / 2) + 'px';
+    brushPreviewElement.style.display = 'block';
+}
+
+
+function createExplosion() {
+    const rect = canvas.getBoundingClientRect();
+    const centerX = rect.left + canvas.width / 2;
+    const centerY = rect.top + canvas.height / 2;
+    const particleCount = 100;
+    
+    // Clear any existing animation/particles
+    stopAnimation();
+    clearParticles();
+    
+    // Create particles
+    for (let i = 0; i < particleCount; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 2 + Math.random() * 3;
+        const size = 3 + Math.random() * 7;
+        const life = 50 + Math.random() * 1000; // milliseconds
+        
+        // Add some variety in colors for explosion
+        const r = 200 + Math.floor(Math.random() * 55);
+        const g = Math.floor(Math.random() * 100);
+        const b = Math.floor(Math.random() * 50);
+        
+        createDOMParticle(
+            centerX,
+            centerY,
+            `rgb(${r}, ${g}, ${b})`,
+            size,
+            Math.cos(angle) * speed,
+            Math.sin(angle) * speed,
+            0.05,
+            life
+        );
+    }
+}
+
+// Function to create confetti effect (random colored particles)
+function createConfetti() {
+    const rect = canvas.getBoundingClientRect();
+    const centerX = rect.left + canvas.width / 2;
+    const centerY = rect.top + canvas.height / 2;
+    const particleCount = 100;
+    
+    // Clear any existing animation/particles
+    stopAnimation();
+    clearParticles();
+    
+    // Create particles
+    for (let i = 0; i < particleCount; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 2 + Math.random() * 3;
+        const size = 3 + Math.random() * 7;
+        const life = 50 + Math.random() * 1000; // milliseconds
+        
+        // Random color for confetti
+        const color = `rgb(
+            ${Math.floor(Math.random() * 255)},
+            ${Math.floor(Math.random() * 255)},
+            ${Math.floor(Math.random() * 255)}
+        )`;
+        
+        createDOMParticle(
+            centerX,
+            centerY,
+            color,
+            size,
+            Math.cos(angle) * speed,
+            Math.sin(angle) * speed,
+            0.05,
+            life
+        );
+    }
+}
+
+// Stop any ongoing animation
+function clearParticles() {
+    // Remove all existing particles
+    const particles = document.querySelectorAll('.dom-particle');
+    particles.forEach(p => p.remove());
+}
+
+function createDOMParticle(x, y, color, size, vx, vy, gravity, life) {
+    // Create a DOM element for the particle
+    const particle = document.createElement('div');
+    particle.className = 'dom-particle';
+    
+    // Style the particle
+    particle.style.position = 'absolute';
+    particle.style.left = `${x}px`;
+    particle.style.top = `${y}px`;
+    particle.style.width = `${size}px`;
+    particle.style.height = `${size}px`;
+    particle.style.backgroundColor = color;
+    particle.style.borderRadius = '50%';
+    particle.style.pointerEvents = 'none';
+    particle.style.zIndex = '1000';
+    
+    // Add to document
+    document.body.appendChild(particle);
+    
+    // Animation properties
+    const startTime = Date.now();
+    const endTime = startTime + life;
+    
+    // Set the animation flag
+    isAnimating = true;
+    
+    // Animation function
+    function animate() {
+        const now = Date.now();
+        if (now >= endTime) {
+            particle.remove();
+            return;
+        }
+        
+        // Calculate position
+        const elapsed = now - startTime;
+        const currentX = parseFloat(particle.style.left) + vx;
+        const currentY = parseFloat(particle.style.top) + vy;
+        
+        // Update position
+        particle.style.left = `${currentX}px`;
+        particle.style.top = `${currentY}px`;
+        
+        // Apply gravity
+        vy += gravity;
+        
+        // Fade based on lifetime
+        const lifeRatio = 1 - (now - startTime) / life;
+        particle.style.opacity = lifeRatio;
+        
+        // Continue animation if still animating
+        if (isAnimating) {
+            animationId = requestAnimationFrame(animate);
+        }
+    }
+    
+    // Start animation
+    animationId = requestAnimationFrame(animate);
+    
+    // Also add some CSS to ensure particles are visible
+    const style = document.createElement('style');
+    style.textContent = `
+        .dom-particle {
+            position: absolute;
+            pointer-events: none;
+            z-index: 1000;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+
+function stopAnimation() {
+    isAnimating = false;
+    if (animationId !== null) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
     }
 }
