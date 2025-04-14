@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>WebGL Paint</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        canvas {
+            border: 1px solid black;
+            display: block;
+            margin-bottom: 10px;
+        }
+        .controls {
+            margin-bottom: 15px;
+        }
+        .slider-container {
+            margin-bottom: 10px;
+        }
+        label {
+            display: inline-block;
+            width: 100px;
+        }
+    </style>
+</head>
+<body onload="main()">
+    <h1>WebGL Paint Program</h1>
+    
+    <div style="display: flex; align-items: flex-start; gap: 20px;">
+      <div>
+          <canvas id="webgl" width="400" height="400">
+              Please use a browser that supports "canvas"
+          </canvas>
+      </div>
+      <div>
+          <img src="GSDrawing.jpeg" width="400">
+      </div>
+  </div>
+    
+    <div class="controls">
+        <button id="clearBtn">Clear Canvas</button>
+    </div>
+    
+    <div class="controls">
+        <label>Shape Type:</label>
+        <button id="pointBtn" class="active">Point</button>
+        <button id="triangleBtn">Triangle</button>
+        <button id="circleBtn">Circle</button>
+    </div>
+    
+    <div class="slider-container">
+        <label>Red:</label>
+        <input type="range" id="redSlider" min="0" max="1" step="0.01" value="1">
+        <span id="redValue">1.0</span>
+    </div>
+    
+    <div class="slider-container">
+        <label>Green:</label>
+        <input type="range" id="greenSlider" min="0" max="1" step="0.01" value="0">
+        <span id="greenValue">0.0</span>
+    </div>
+    
+    <div class="slider-container">
+        <label>Blue:</label>
+        <input type="range" id="blueSlider" min="0" max="1" step="0.01" value="0">
+        <span id="blueValue">0.0</span>
+    </div>
+    
+    <div class="slider-container">
+        <label>Size:</label>
+        <input type="range" id="sizeSlider" min="1" max="30" step="1" value="10">
+        <span id="sizeValue">10</span>
+    </div>
+    
+    <div class="slider-container">
+        <label>Circle Segments:</label>
+        <input type="range" id="segmentsSlider" min="3" max="36" step="1" value="12">
+        <span id="segmentsValue">12</span>
+    </div>
+
+    <div class="controls">
+      <button id="clearBtn">Clear Canvas</button>
+      <button id="drawDogBtn">Draw Dog</button>
+    </div>
+    
+    <!-- Include the WebGL libraries and our script -->
+    <script src="lib/webgl-utils.js"></script>
+    <script src="lib/webgl-debug.js"></script>
+    <script src="lib/cuon-utils.js"></script>
+    <script src="lib/cuon-matrix-cse160.js"></script>
+    <script src="point.js"></script>
+    <script src="triangle.js"></script>
+    <script src="circle.js"></script>
+    <script src="asg1.js"></script>
+    <script src="Dog.js"></script>
+</body>
+</html>
