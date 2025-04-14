@@ -29,6 +29,7 @@ let dog;
 let currentColor = [1.0, 0.0, 0.0, 1.0]; // RGBA, default red
 let currentSize = 10.0;
 let currentSegments = 12;
+let dogDisplayed = false;
 
 function main() {
     // Set up WebGL context
@@ -104,6 +105,7 @@ function setupEventListeners() {
     // Button events
     document.getElementById('clearBtn').onclick = function() { 
         shapesList = []; 
+        dogDisplayed = false;
         gl.clear(gl.COLOR_BUFFER_BIT);
     };
     
@@ -123,19 +125,11 @@ function setupEventListeners() {
     };
 
     document.getElementById('drawDogBtn').onclick = function() { 
-        // Clear the canvas first for a clean drawing
-        gl.clear(gl.COLOR_BUFFER_BIT);
+        // Toggle the dog display state
+        dogDisplayed = true;
         
-        // Draw the dog
-        dog.render(gl, a_Position, u_FragColor);
-        
-        // If you want the dog to be part of the shapes list (optional):
-        // This would make it possible to paint over the dog and keep 
-        // it when doing other operations
-        // shapesList = []; // Clear the shapes list if you want a fresh canvas with just the dog
-        
-        // Note: we're not adding the dog triangles to the shapesList as per the requirement
-        // that you don't need to integrate the picture with your painting
+        // Re-render everything
+        renderAllShapes();
     };
     
     // Slider events
@@ -208,7 +202,12 @@ function handleClick(ev) {
 function renderAllShapes() {
     // Clear the canvas
     gl.clear(gl.COLOR_BUFFER_BIT);
-    
+
+    // First draw the dog (if it should be displayed)
+    if (dogDisplayed) {
+        dog.render(gl, a_Position, u_FragColor);
+    }
+
     // Draw each shape
     for (let i = 0; i < shapesList.length; i++) {
         shapesList[i].render(gl, a_Position, u_FragColor, u_PointSize);
